@@ -11,7 +11,6 @@ Unlike standard log, the gollogging library provides a leveled logger with a str
 - Supports lambda for caller frame.
 - Supports leveled logging.
 - Android Studio Logcat like output.
-- Panic recovery and logging.
 
 
 ## Supports Also Lambda Functions
