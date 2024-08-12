@@ -21,26 +21,30 @@ func internalLog(level Level, message ...any) {
 	}
 	var errMessages []string
 	for _, x := range message {
+		var parsed string
 		switch x.(type) {
 		case error:
-			errMessages = append(errMessages, x.(error).Error())
+			parsed = x.(error).Error()
 		case string:
-			errMessages = append(errMessages, x.(string))
+			parsed = x.(string)
 		case bool:
 			if x.(bool) {
-				errMessages = append(errMessages, "true")
+				parsed = "true"
 			} else {
-				errMessages = append(errMessages, "false")
+				parsed = "false"
 			}
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			errMessages = append(errMessages, fmt.Sprintf("%d", x))
+			parsed = fmt.Sprintf("%d", x)
 		case float32, float64:
-			errMessages = append(errMessages, fmt.Sprintf("%f", x))
+			parsed = fmt.Sprintf("%f", x)
 		default:
 			if x == nil {
 				continue
 			}
-			errMessages = append(errMessages, fmt.Sprintf("%v", x))
+			parsed = fmt.Sprintf("%v", x)
+		}
+		if len(parsed) > 0 {
+			errMessages = append(errMessages, parsed)
 		}
 	}
 	if len(errMessages) == 0 {
