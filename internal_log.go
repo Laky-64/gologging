@@ -44,7 +44,7 @@ func internalLog(level Level, message ...any) {
 			parsed = fmt.Sprintf("%v", x)
 		}
 		if len(parsed) > 0 {
-			errMessages = append(errMessages, parsed)
+			errMessages = append(errMessages, strings.ReplaceAll(parsed, "\r", ""))
 		}
 	}
 	if len(errMessages) == 0 {
