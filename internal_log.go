@@ -59,11 +59,11 @@ func internalLog(level Level, message ...any) {
 	messageStyle := lipgloss.NewStyle()
 	blockContainer := lipgloss.NewStyle().
 		MarginLeft(1)
-	descriptionStyle := lipgloss.NewStyle()
 	fileStyle := lipgloss.NewStyle().
 		Margin(0, 1).
 		Foreground(lipgloss.Color("#61afe1"))
 	iconStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#000000")).
 		Padding(0, 1).
 		MarginRight(1)
 
@@ -73,26 +73,20 @@ func internalLog(level Level, message ...any) {
 			Foreground(lipgloss.Color("#bbbbbb")).
 			SetString("D")
 		messageStyle = messageStyle.Foreground(lipgloss.Color("#279999"))
-		descriptionStyle = descriptionStyle.Foreground(lipgloss.Color("#279999"))
 	case InfoLevel:
 		iconStyle = iconStyle.Background(lipgloss.Color("#698759")).
 			Foreground(lipgloss.Color("#e9f5e6")).
 			Bold(true).
 			SetString("I")
 		messageStyle = messageStyle.Foreground(lipgloss.Color("#abc022"))
-		descriptionStyle = descriptionStyle.Foreground(lipgloss.Color("#abc022"))
 	case WarnLevel:
 		iconStyle = iconStyle.Background(lipgloss.Color("#bbb527")).
-			Foreground(lipgloss.Color("#000000")).
 			SetString("W")
 		messageStyle = messageStyle.Foreground(lipgloss.Color("#bbb527"))
-		descriptionStyle = descriptionStyle.Foreground(lipgloss.Color("#bbb527"))
 	case ErrorLevel, FatalLevel:
 		iconStyle = iconStyle.Background(lipgloss.Color("#cf5b56")).
-			Foreground(lipgloss.Color("#000000")).
 			SetString("E")
 		messageStyle = messageStyle.Foreground(lipgloss.Color("#cf5b56"))
-		descriptionStyle = descriptionStyle.Foreground(lipgloss.Color("#cf5b56"))
 	}
 
 	var mainDetails *types.CallerInfo
@@ -135,7 +129,7 @@ func internalLog(level Level, message ...any) {
 				lines,
 				lipgloss.JoinHorizontal(
 					lipgloss.Top,
-					descriptionStyle.Render(fmt.Sprintf("at %s(", subDetails.FuncName)),
+					messageStyle.Render(fmt.Sprintf("at %s(", subDetails.FuncName)),
 					fileStyle.Render(
 						lipgloss.JoinHorizontal(
 							lipgloss.Top,
@@ -144,7 +138,7 @@ func internalLog(level Level, message ...any) {
 							ansi.ResetHyperlink(),
 						),
 					),
-					descriptionStyle.Render(")"),
+					messageStyle.Render(")"),
 				),
 			)
 		}
