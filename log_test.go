@@ -6,6 +6,7 @@ import (
 )
 
 func TestStdLog(t *testing.T) {
+	SetLevel(DebugLevel)
 	Debug("asasdf", 1)
 	Info("asasdf", 1)
 	Warn("asasdf", 1)
@@ -14,12 +15,22 @@ func TestStdLog(t *testing.T) {
 }
 
 func TestBrokenGoRoutine(t *testing.T) {
-	go Fatal("Error while sending message to Nick: Bad Request: message text is empty")
+	go Fatal("TestBrokenGoRoutine")
 	time.Sleep(1 * time.Second)
 }
 
 func TestLambda(t *testing.T) {
 	func() {
-		Fatal("Error while sending message to Nick: Bad Request: message text is empty")
+		Fatal("TestLambda")
 	}()
+}
+
+func TestGetLogger(t *testing.T) {
+	SetLevel(DebugLevel)
+	logger := GetLogger("test")
+	logger.Debug("asasdf", 1)
+	logger.Info("asasdf", 1)
+	logger.Warn("asasdf", 1)
+	logger.Error("asasdf", 1)
+	logger.Fatal("asasdf", 1)
 }

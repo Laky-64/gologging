@@ -7,14 +7,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"golang.org/x/term"
-	"math"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
-func internalLog(level Level, message ...any) {
-	if level < currentLevel {
+func (ctx *Logger) internalLog(level Level, message ...any) {
+	if atomic.LoadInt32(&ctx.level) > int32(level) {
+		return
+	}
+	if atomic.LoadUint32(&ctx.isDiscard) != 0 {
 		return
 	}
 	capitalize := func(s string) string {
@@ -22,28 +25,7 @@ func internalLog(level Level, message ...any) {
 	}
 	var errMessages []string
 	for _, x := range message {
-		var parsed string
-		switch x.(type) {
-		case error:
-			parsed = x.(error).Error()
-		case string:
-			parsed = x.(string)
-		case bool:
-			if x.(bool) {
-				parsed = "true"
-			} else {
-				parsed = "false"
-			}
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-			parsed = fmt.Sprintf("%d", x)
-		case float32, float64:
-			parsed = fmt.Sprintf("%f", x)
-		default:
-			if x == nil {
-				continue
-			}
-			parsed = fmt.Sprintf("%v", x)
-		}
+		parsed := fmt.Sprintf("%v", x)
 		if len(parsed) > 0 {
 			errMessages = append(errMessages, strings.ReplaceAll(parsed, "\r", ""))
 		}
@@ -51,26 +33,9 @@ func internalLog(level Level, message ...any) {
 	if len(errMessages) == 0 {
 		return
 	}
-	termWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
-	termWidth = int(math.Max(float64(termWidth), 100))
 
-	timeStyle := lipgloss.NewStyle().
-		MarginRight(2)
-	tagStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#62c6b7")).
-		Width(int(math.Max(float64(termWidth)*0.08, 10)))
-	packageStyle := lipgloss.NewStyle().
-		Width(int(math.Max(float64(termWidth)*0.15, 15)))
-	messageStyle := lipgloss.NewStyle()
-	blockContainer := lipgloss.NewStyle().
-		MarginLeft(1)
-	fileStyle := lipgloss.NewStyle().
-		Margin(0, 1).
-		Foreground(lipgloss.Color("#61afe1"))
-	iconStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Padding(0, 1).
-		MarginRight(1)
+	iconStyle := ctx.s.IconStyle
+	messageStyle := ctx.s.MsgStyle
 
 	switch level {
 	case DebugLevel:
@@ -94,11 +59,28 @@ func internalLog(level Level, message ...any) {
 		messageStyle = messageStyle.Foreground(lipgloss.Color("#cf5b56"))
 	}
 
+	termWidth, _, _ := term.GetSize(int(os.Stderr.Fd()))
+	tagStyle := ctx.s.TagStyle
+	packageStyle := ctx.s.PkgStyle
+	if termWidth > MinTermWidth {
+		tagStyle = tagStyle.Width(tagStyle.GetWidth() * termWidth / MinTermWidth)
+		packageStyle = packageStyle.Width(packageStyle.GetWidth() * termWidth / MinTermWidth)
+	}
+
+	messageWidth := termWidth - lipgloss.Width(ctx.s.TimeStyle.Render(ctx.timeFormat))
+	messageWidth -= lipgloss.Width(tagStyle.Render())
+	messageWidth -= lipgloss.Width(packageStyle.Render())
+	messageWidth -= lipgloss.Width(iconStyle.Render())
+	messageContainerStyle := lipgloss.NewStyle().
+		Width(messageWidth).
+		Renderer(ctx.re)
+
 	var mainDetails *types.CallerInfo
-	startSkips := 2
+	startSkips := 0
+	ignoreInfo, _ := getInfo(0)
 	for {
 		details, err := getInfo(startSkips)
-		if err == nil {
+		if err == nil && details.PackageName != ignoreInfo.PackageName {
 			mainDetails = details
 			break
 		} else if errors.Is(err, goRoutineFunction) {
@@ -134,17 +116,17 @@ func internalLog(level Level, message ...any) {
 			if runtimeErr != nil {
 				break
 			}
-			if mainDetails.PackageName != subDetails.PackageName {
+			if mainDetails == nil || mainDetails.PackageName != subDetails.PackageName {
 				subDetails.FuncName = subDetails.PackageName + "." + subDetails.FuncName
 			}
 			lines = append(
 				lines,
 				lipgloss.JoinHorizontal(
-					lipgloss.Top,
+					lipgloss.Left,
 					messageStyle.Render(fmt.Sprintf("at %s(", subDetails.FuncName)),
-					fileStyle.Render(
+					ctx.s.FileStyle.Render(
 						lipgloss.JoinHorizontal(
-							lipgloss.Top,
+							lipgloss.Left,
 							ansi.SetHyperlink(fmt.Sprintf("%s:%d", subDetails.FilePath, subDetails.Line)),
 							fmt.Sprintf("%s:%d", subDetails.FileName, subDetails.Line),
 							ansi.ResetHyperlink(),
@@ -155,16 +137,30 @@ func internalLog(level Level, message ...any) {
 			)
 		}
 	}
+	var logName string
+	if len(ctx.loggerName) > 0 {
+		logName = fmt.Sprintf("[%s] ", ctx.loggerName)
+	}
 	blocks := []string{
-		messageStyle.Render(capitalize(matches[3])),
+		messageContainerStyle.Render(
+			messageStyle.Render(
+				lipgloss.JoinHorizontal(
+					lipgloss.Left,
+					logName,
+					capitalize(matches[3]),
+				),
+			),
+		),
 	}
 	if len(lines) > 0 {
-		blocks = append(blocks, blockContainer.Render(lipgloss.JoinVertical(lipgloss.Top, lines...)))
+		blocks = append(blocks, messageContainerStyle.Render(ctx.s.BlockStyle.Render(lipgloss.JoinVertical(lipgloss.Top, lines...))))
 	}
-	fmt.Println(
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	ctx.b.WriteString(
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			timeStyle.Render(time.Now().Format("2006-01-02 15:04:05")),
+			ctx.s.TimeStyle.Render(time.Now().Format(ctx.timeFormat)),
 			tagStyle.Render(ansi.Truncate(tagName, tagStyle.GetWidth()-3, "...")),
 			packageStyle.Render(ansi.Truncate(packageName, packageStyle.GetWidth()-3, "...")),
 			iconStyle.Render(),
@@ -174,6 +170,8 @@ func internalLog(level Level, message ...any) {
 			),
 		),
 	)
+	ctx.b.WriteRune('\n')
+	_, _ = ctx.b.WriteTo(ctx.w)
 	if level == FatalLevel {
 		os.Exit(1)
 	}
