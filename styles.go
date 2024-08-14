@@ -22,6 +22,6 @@ func defaultStyles(r *lipgloss.Renderer) *Styles {
 		MsgStyle:   lipgloss.NewStyle().Renderer(r),
 		BlockStyle: lipgloss.NewStyle().MarginLeft(1).Renderer(r),
 		FileStyle:  lipgloss.NewStyle().Margin(0, 1).Foreground(lipgloss.Color("#61afe1")).Renderer(r),
-		IconStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")).Padding(0, 1).Renderer(r),
+		IconStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")).Padding(0, 1).MarginRight(1).Renderer(r),
 	}
 }
