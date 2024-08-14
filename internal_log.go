@@ -1,6 +1,7 @@
 package gologging
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Laky-64/gologging/types"
 	"github.com/charmbracelet/lipgloss"
@@ -100,17 +101,24 @@ func internalLog(level Level, message ...any) {
 		if err == nil {
 			mainDetails = details
 			break
+		} else if errors.Is(err, goRoutineFunction) {
+			break
 		}
 		if startSkips > 10 {
 			break
 		}
 		startSkips++
 	}
-
+	var packageName string
+	if mainDetails != nil {
+		packageName = mainDetails.PackageName
+	} else {
+		packageName = "unknown"
+	}
 	matches := tagRgx.FindStringSubmatch(strings.Join(errMessages, " "))
 	tagName := matches[2]
 	if len(tagName) == 0 {
-		packageInfo := strings.Split(mainDetails.PackageName, ".")
+		packageInfo := strings.Split(packageName, ".")
 		tagName = packageInfo[len(packageInfo)-1]
 	}
 	if tagName == "main" {
@@ -158,7 +166,7 @@ func internalLog(level Level, message ...any) {
 			lipgloss.Left,
 			timeStyle.Render(time.Now().Format("2006-01-02 15:04:05")),
 			tagStyle.Render(ansi.Truncate(tagName, tagStyle.GetWidth()-3, "...")),
-			packageStyle.Render(ansi.Truncate(mainDetails.PackageName, packageStyle.GetWidth()-3, "...")),
+			packageStyle.Render(ansi.Truncate(packageName, packageStyle.GetWidth()-3, "...")),
 			iconStyle.Render(),
 			lipgloss.JoinVertical(
 				lipgloss.Top,

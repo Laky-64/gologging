@@ -9,16 +9,24 @@ import (
 	"strings"
 )
 
+var (
+	goRoutineFunction = fmt.Errorf("goroutine found")
+	runtimeFunction   = fmt.Errorf("runtime function")
+	testFunction      = fmt.Errorf("testing function")
+)
+
 func getInfo(skips int) (*types.CallerInfo, error) {
 	var callerInfo types.CallerInfo
 	pc, file, line, _ := runtime.Caller(skips + 1)
 	callerInfo.Line = line
 	callerInfo.FileName = path.Base(file)
 	callerInfo.FuncName = runtime.FuncForPC(pc).Name()
-	if strings.HasPrefix(callerInfo.FuncName, "runtime.") {
-		return nil, fmt.Errorf("runtime function")
+	if strings.HasPrefix(callerInfo.FuncName, "runtime.goexit") {
+		return nil, goRoutineFunction
+	} else if strings.HasPrefix(callerInfo.FuncName, "runtime.") {
+		return nil, runtimeFunction
 	} else if strings.HasPrefix(callerInfo.FuncName, "testing.") {
-		return nil, fmt.Errorf("testing function")
+		return nil, testFunction
 	}
 	funcInfo := getFunctionInfoRgx.FindStringSubmatch(callerInfo.FuncName)
 	callerInfo.PackageName = strings.ToLower(
@@ -33,14 +41,10 @@ func getInfo(skips int) (*types.CallerInfo, error) {
 		),
 	)
 	callerInfo.FilePath = path.Join(path.Join(strings.Split(funcInfo[1], "/")[1:]...), path.Base(file))
-	callerInfo.FuncName = funcInfo[3]
+	callerInfo.FuncName = funcInfo[5]
 	if lambdaMatches := lambdaNameRgx.FindAllStringSubmatch(callerInfo.FuncName, -1); len(lambdaMatches) > 0 {
-		lambdaDetails, err := getInfo(skips + 2)
-		if err != nil {
-			return nil, err
-		}
-		numFunc, _ := strconv.Atoi(lambdaMatches[0][2])
-		callerInfo.FuncName = fmt.Sprintf("lambda$%s$%d", lambdaDetails.FuncName, numFunc-1)
+		numFunc, _ := strconv.Atoi(lambdaMatches[0][3])
+		callerInfo.FuncName = fmt.Sprintf("lambda$%s$%d", lambdaMatches[0][2], numFunc-1)
 	}
 	callerInfo.FuncName = strings.ReplaceAll(callerInfo.FuncName, ".", "")
 	return &callerInfo, nil
