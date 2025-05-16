@@ -34,3 +34,12 @@ func TestGetLogger(t *testing.T) {
 	logger.Error("asasdf", 1)
 	logger.Fatal("asasdf", 1)
 }
+
+func TestMultipleLoggers(t *testing.T) {
+	loggerA := GetLogger("test")
+	loggerA.SetLevel(FatalLevel)
+	loggerB := GetLogger("test2")
+	loggerB.SetLevel(DebugLevel)
+	loggerA.Debug("loggerA Debug")
+	loggerB.Debug("loggerB Debug")
+}
