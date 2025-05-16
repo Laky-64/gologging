@@ -28,7 +28,7 @@ const (
 const MinTermWidth = 200
 
 type Logger struct {
-	level      int32
+	level      atomic.Int32
 	mu         *sync.RWMutex
 	b          bytes.Buffer
 	w          io.Writer
@@ -63,13 +63,13 @@ func (ctx *Logger) SetOutput(w io.Writer) {
 func (ctx *Logger) SetLevel(level Level) {
 	ctx.mu.Lock()
 	defer ctx.mu.Unlock()
-	atomic.StoreInt32(&ctx.level, int32(level))
+	ctx.level.Store(int32(level))
 }
 
 func (ctx *Logger) GetLevel() Level {
 	ctx.mu.RLock()
 	defer ctx.mu.RUnlock()
-	return Level(ctx.level)
+	return Level(ctx.level.Load())
 }
 
 func (ctx *Logger) Debug(message ...any) {

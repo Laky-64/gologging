@@ -14,7 +14,7 @@ import (
 )
 
 func (ctx *Logger) internalLog(level Level, message ...any) {
-	if atomic.LoadInt32(&ctx.level) > int32(level) {
+	if ctx.level.Load() > int32(level) {
 		return
 	}
 	if atomic.LoadUint32(&ctx.isDiscard) != 0 {

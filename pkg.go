@@ -15,19 +15,24 @@ var (
 	defaultLoggerOnce sync.Once
 )
 
+func getDefaultContext() *Logger {
+	logger := &Logger{
+		mu:         &sync.RWMutex{},
+		b:          bytes.Buffer{},
+		timeFormat: "2006-01-02 15:04:05",
+	}
+	logger.level.Store(int32(InfoLevel))
+	logger.SetOutput(os.Stderr)
+	return logger
+}
+
 func defaultInstance() *Logger {
 	dl := defaultLogger.Load()
 	if dl == nil {
 		defaultLoggerOnce.Do(func() {
 			defaultLogger.CompareAndSwap(
-				nil, &Logger{
-					level:      int32(InfoLevel),
-					mu:         &sync.RWMutex{},
-					b:          bytes.Buffer{},
-					timeFormat: "2006-01-02 15:04:05",
-				},
+				nil, getDefaultContext(),
 			)
-			defaultLogger.Load().SetOutput(os.Stderr)
 		})
 		dl = defaultLogger.Load()
 	}
@@ -38,7 +43,7 @@ func GetLogger(name string) *Logger {
 	if logger, ok := loggersRegistry.Load(name); ok {
 		return logger.(*Logger)
 	}
-	logger := defaultInstance()
+	logger := getDefaultContext()
 	logger.loggerName = name
 	loggersRegistry.Store(name, logger)
 	return logger
