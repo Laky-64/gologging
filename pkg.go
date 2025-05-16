@@ -44,6 +44,7 @@ func GetLogger(name string) *Logger {
 		return logger.(*Logger)
 	}
 	logger := getDefaultContext()
+	logger.level.Store(int32(defaultInstance().GetLevel()))
 	logger.loggerName = name
 	loggersRegistry.Store(name, logger)
 	return logger
