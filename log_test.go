@@ -43,3 +43,11 @@ func TestMultipleLoggers(t *testing.T) {
 	loggerA.Debug("loggerA Debug")
 	loggerB.Debug("loggerB Debug")
 }
+
+func TestLoggerWithFormatting(t *testing.T) {
+	SetLevel(DebugLevel)
+	DebugF("TestLoggerWithFormatting %s", "formatted message")
+	InfoF("TestLoggerWithFormatting %s", "formatted message")
+	WarnF("TestLoggerWithFormatting %s", "formatted message")
+	ErrorF("TestLoggerWithFormatting %s", "formatted message")
+}

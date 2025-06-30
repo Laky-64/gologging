@@ -66,18 +66,38 @@ func Debug(message ...any) {
 	defaultInstance().Debug(message...)
 }
 
+func DebugF(message string, args ...any) {
+	defaultInstance().DebugF(message, args...)
+}
+
 func Info(message ...any) {
 	defaultInstance().Info(message...)
+}
+
+func InfoF(message string, args ...any) {
+	defaultInstance().InfoF(message, args...)
 }
 
 func Warn(message ...any) {
 	defaultInstance().Warn(message...)
 }
 
+func WarnF(message string, args ...any) {
+	defaultInstance().WarnF(message, args...)
+}
+
 func Error(message ...any) {
 	defaultInstance().Error(message...)
 }
 
+func ErrorF(message string, args ...any) {
+	defaultInstance().ErrorF(message, args...)
+}
+
 func Fatal(message ...any) {
 	defaultInstance().Fatal(message...)
+}
+
+func FatalF(message string, args ...any) {
+	defaultInstance().FatalF(message, args...)
 }

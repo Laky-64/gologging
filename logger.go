@@ -2,6 +2,7 @@ package gologging
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"io"
@@ -76,18 +77,38 @@ func (ctx *Logger) Debug(message ...any) {
 	ctx.internalLog(DebugLevel, message...)
 }
 
+func (ctx *Logger) DebugF(message string, args ...any) {
+	ctx.Debug(fmt.Sprintf(message, args...))
+}
+
 func (ctx *Logger) Info(message ...any) {
 	ctx.internalLog(InfoLevel, message...)
+}
+
+func (ctx *Logger) InfoF(message string, args ...any) {
+	ctx.Info(fmt.Sprintf(message, args...))
 }
 
 func (ctx *Logger) Warn(message ...any) {
 	ctx.internalLog(WarnLevel, message...)
 }
 
+func (ctx *Logger) WarnF(message string, args ...any) {
+	ctx.Warn(fmt.Sprintf(message, args...))
+}
+
 func (ctx *Logger) Error(message ...any) {
 	ctx.internalLog(ErrorLevel, message...)
 }
 
+func (ctx *Logger) ErrorF(message string, args ...any) {
+	ctx.Error(fmt.Sprintf(message, args...))
+}
+
 func (ctx *Logger) Fatal(message ...any) {
 	ctx.internalLog(FatalLevel, message...)
+}
+
+func (ctx *Logger) FatalF(message string, args ...any) {
+	ctx.Fatal(fmt.Sprintf(message, args...))
 }
