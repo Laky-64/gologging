@@ -59,7 +59,10 @@ func (ctx *Logger) internalLog(level Level, message ...any) {
 		messageStyle = messageStyle.Foreground(lipgloss.Color("#cf5b56"))
 	}
 
-	termWidth, _, _ := term.GetSize(int(os.Stderr.Fd()))
+	termWidth, _, err := term.GetSize(int(os.Stderr.Fd()))
+	if err != nil || termWidth <= 0 {
+		termWidth = MinTermWidth
+	}
 	tagStyle := ctx.s.TagStyle
 	packageStyle := ctx.s.PkgStyle
 	if termWidth > MinTermWidth {
